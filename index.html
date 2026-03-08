@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FHN Daily Macro Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --navy: #0a1628;
+      --navy-mid: #0f2040;
+      --navy-light: #1a3560;
+      --gold: #c9952a;
+      --gold-light: #e8b84b;
+      --cream: #f5f0e8;
+      --cream-dark: #e8e0d0;
+      --red: #c0392b;
+      --green: #1a6b45;
+      --amber: #b7791f;
+      --text-primary: #f5f0e8;
+      --text-secondary: #a8b8cc;
+      --border: rgba(201,149,42,0.25);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--navy);
+      color: var(--text-primary);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(201,149,42,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(201,149,42,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 48px 32px;
+    }
+
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 32px;
+      margin-bottom: 40px;
+    }
+
+    .ticker-badge {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      color: var(--gold);
+      background: rgba(201,149,42,0.1);
+      border: 1px solid var(--border);
+      padding: 4px 12px;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 42px;
+      font-weight: 900;
+      line-height: 1.1;
+      color: var(--cream);
+      letter-spacing: -0.02em;
+    }
+
+    h1 span { color: var(--gold); }
+
+    .subtitle {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      letter-spacing: 0.15em;
+      margin-top: 10px;
+    }
+
+    .header-right {
+      text-align: right;
+      flex-shrink: 0;
+      margin-left: 24px;
+    }
+
+    .date-display {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+
+    .btn-generate {
+      background: var(--gold);
+      color: var(--navy);
+      border: none;
+      padding: 14px 28px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-generate::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.15);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .btn-generate:hover::after { opacity: 1; }
+    .btn-generate:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(201,149,42,0.35); }
+    .btn-generate:active { transform: translateY(0); }
+    .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .loading-state {
+      display: none;
+      text-align: center;
+      padding: 80px 0;
+    }
+
+    .loading-state.active { display: block; }
+
+    .loading-bars {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 24px;
+    }
+
+    .loading-bars span {
+      width: 3px;
+      height: 32px;
+      background: var(--gold);
+      animation: bar-bounce 1s ease-in-out infinite;
+    }
+
+    .loading-bars span:nth-child(2) { animation-delay: 0.1s; }
+    .loading-bars span:nth-child(3) { animation-delay: 0.2s; }
+    .loading-bars span:nth-child(4) { animation-delay: 0.3s; }
+    .loading-bars span:nth-child(5) { animation-delay: 0.4s; }
+
+    @keyframes bar-bounce {
+      0%, 100% { transform: scaleY(0.4); opacity: 0.4; }
+      50% { transform: scaleY(1); opacity: 1; }
+    }
+
+    .loading-text {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+      letter-spacing: 0.15em;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .loading-status {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+      margin-top: 8px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 0;
+      border: 1px dashed var(--border);
+    }
+
+    .empty-state .icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--text-secondary);
+      letter-spacing: 0.1em;
+    }
+
+    .report-content {
+      display: none;
+      animation: fadeIn 0.6s ease;
+    }
+
+    .report-content.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .report-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .report-timestamp {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+    }
+
+    .report-body {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 15px;
+      line-height: 1.75;
+      color: var(--cream);
+    }
+
+    .report-body h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--cream);
+      margin: 36px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .report-body h3 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin: 24px 0 10px;
+    }
+
+    .report-body p { margin-bottom: 14px; font-weight: 300; }
+    .report-body strong { font-weight: 500; color: var(--gold-light); }
+    .report-body ul, .report-body ol { margin: 0 0 14px 20px; }
+    .report-body li { margin-bottom: 6px; }
+
+    .report-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+    }
+
+    .report-body th {
+      background: var(--navy-light);
+      color: var(--gold);
+      padding: 10px 14px;
+      text-align: left;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      border: 1px solid var(--border);
+    }
+
+    .report-body td {
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      color: var(--cream);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .report-body tr:hover td { background: rgba(201,149,42,0.05); }
+
+    .report-body hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 32px 0;
+    }
+
+    .report-body blockquote {
+      border-left: 3px solid var(--gold);
+      padding: 12px 20px;
+      margin: 16px 0;
+      background: rgba(201,149,42,0.05);
+      font-style: italic;
+      color: var(--text-secondary);
+    }
+
+    .footer {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-note {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-secondary);
+      letter-spacing: 0.08em;
+      opacity: 0.6;
+    }
+
+    .btn-print {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 8px 18px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: none;
+    }
+
+    .btn-print.active { display: block; }
+    .btn-print:hover { border-color: var(--gold); color: var(--gold); }
+
+    .error-state {
+      display: none;
+      padding: 32px;
+      border: 1px solid rgba(192,57,43,0.4);
+      background: rgba(192,57,43,0.07);
+    }
+
+    .error-state.active { display: block; }
+
+    .error-state p {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: #e57373;
+      letter-spacing: 0.08em;
+    }
+
+    @media print {
+      body { background: white; color: black; }
+      body::before { display: none; }
+      .btn-generate, .btn-print { display: none; }
+      .report-body { color: #1a1a1a; }
+      .report-body h2, .report-body h3 { color: #1a1a1a; }
+      .report-body table th { background: #eee; color: #1a1a1a; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="ticker-badge">NYSE: FHN</div>
+      <h1>First Horizon<br/><span>Daily Intelligence</span></h1>
+      <div class="subtitle">MACROECONOMIC IMPACT REPORT · POWERED BY CLAUDE AI</div>
+    </div>
+    <div class="header-right">
+      <div class="date-display" id="dateDisplay">—</div>
+      <button class="btn-generate" id="generateBtn" onclick="generateReport()">
+        ⬡ GENERATE REPORT
+      </button>
+    </div>
+  </div>
+
+  <div class="empty-state" id="emptyState">
+    <div class="icon">◈</div>
+    <p>CLICK "GENERATE REPORT" TO FETCH TODAY'S<br/>MACROECONOMIC ANALYSIS FOR FHN</p>
+  </div>
+
+  <div class="loading-state" id="loadingState">
+    <div class="loading-bars">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="loading-text">RESEARCHING MARKETS &amp; NEWS</div>
+    <div class="loading-status" id="loadingStatus">Scanning macroeconomic signals...</div>
+  </div>
+
+  <div class="error-state" id="errorState">
+    <p id="errorMsg">An error occurred. Please try again.</p>
+  </div>
+
+  <div class="report-content" id="reportContent">
+    <div class="report-meta">
+      <div class="report-timestamp" id="reportTimestamp"></div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text-secondary);letter-spacing:0.1em;">LIVE RESEARCH · WEB SEARCH ENABLED</div>
+    </div>
+    <div class="report-body" id="reportBody"></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-note">FOR INFORMATIONAL PURPOSES ONLY. NOT FINANCIAL ADVICE.</div>
+    <button class="btn-print" id="printBtn" onclick="window.print()">⬡ PRINT / SAVE PDF</button>
+  </div>
+
+</div>
+
+<script>
+  const now = new Date();
+  document.getElementById('dateDisplay').textContent =
+    now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase();
+
+  const loadingMessages = [
+    "Scanning macroeconomic signals...",
+    "Fetching latest Fed commentary...",
+    "Analyzing regional banking sector...",
+    "Reviewing jobs & inflation data...",
+    "Checking FHN-specific news...",
+    "Assessing tariff & credit risks...",
+    "Compiling risk scorecard...",
+    "Formatting intelligence brief..."
+  ];
+
+  let loadingInterval;
+
+  function startLoadingMessages() {
+    let i = 0;
+    const el = document.getElementById('loadingStatus');
+    el.textContent = loadingMessages[0];
+    loadingInterval = setInterval(() => {
+      i = (i + 1) % loadingMessages.length;
+      el.textContent = loadingMessages[i];
+    }, 2500);
+  }
+
+  function stopLoadingMessages() { clearInterval(loadingInterval); }
+
+  function setState(state) {
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('loadingState').className = 'loading-state';
+    document.getElementById('errorState').className = 'error-state';
+    document.getElementById('reportContent').className = 'report-content';
+    if (state === 'empty') document.getElementById('emptyState').style.display = 'block';
+    if (state === 'loading') document.getElementById('loadingState').className = 'loading-state active';
+    if (state === 'error') document.getElementById('errorState').className = 'error-state active';
+    if (state === 'report') document.getElementById('reportContent').className = 'report-content active';
+  }
+
+  function markdownToHtml(md) {
+    return md
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^---+$/gm, '<hr/>')
+      .replace(/^\|(.+)\|$/gm, (match) => {
+        const cells = match.split('|').filter(c => c.trim() !== '');
+        const isHeader = cells.every(c => c.trim().match(/^[-:]+$/));
+        if (isHeader) return '';
+        return '<tr>' + cells.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+      })
+      .replace(/((<tr>.*<\/tr>\n?)+)/gs, '<table>$1</table>')
+      .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/gs, '<ul>$&</ul>')
+      .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+      .replace(/\n\n([^<\n].+)/g, '\n\n<p>$1</p>');
+  }
+
+  async function generateReport() {
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.textContent = '⬡ GENERATING...';
+    setState('loading');
+    startLoadingMessages();
+
+    const today = new Date().toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    const prompt = `You are a senior bank analyst writing a daily macroeconomic intelligence brief for First Horizon National Corporation (NYSE: FHN), a major regional bank headquartered in Memphis, TN with ~$84B in assets focused on the Southeast US.
+
+Today is ${today}.
+
+Using your web search tool, research the LATEST news and data from the past 24-48 hours on:
+1. US macroeconomic indicators (jobs, inflation, GDP, consumer data)
+2. Federal Reserve commentary and interest rate expectations
+3. Regional and community banking sector news
+4. FHN-specific news, analyst actions, or corporate updates
+5. Tariff, trade, or regulatory developments affecting banks
+6. Credit market conditions and loan demand signals
+
+Then write a comprehensive daily report in this exact structure using Markdown:
+
+# FHN Daily Macro Intelligence — ${today}
+
+## Executive Summary
+[3-4 sentence high-impact summary of the top themes and net impact on FHN today]
+
+## 1. [Top Macro Story Title] — [🔴/🟢/🟡 Impact Level]
+[Analysis of the macro development and specific FHN impact]
+
+## 2. [Second Macro Story] — [Impact Level]
+[Analysis]
+
+## 3. [Fed & Interest Rate Watch] — [Impact Level]
+[Analysis]
+
+## 4. [Banking Sector / Regulatory News] — [Impact Level]
+[Analysis]
+
+## 5. [FHN-Specific News & Analyst Activity]
+[Any direct FHN news, earnings, analyst upgrades/downgrades, conference appearances]
+
+## Risk Scorecard
+
+| Factor | Direction | Severity | FHN Impact |
+|--------|-----------|----------|------------|
+| [Factor 1] | 🔴 Negative / 🟢 Positive / 🟡 Mixed | High/Med/Low | [Brief note] |
+
+## Key Watchpoints for Next 24-48 Hours
+[Bullet list of 3-5 upcoming events or data releases to monitor]
+
+---
+*Report generated ${today}. For informational purposes only. Not financial advice.*
+
+Be specific, data-driven, and direct. Use actual figures and numbers where available.`;
+
+    try {
+      // Calls the Netlify proxy function — keeps API key secure on the server
+      const response = await fetch("/api/claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || `API error ${response.status}`);
+      }
+
+      const data = await response.json();
+      const fullText = data.content
+        .map(block => block.type === 'text' ? block.text : '')
+        .filter(Boolean)
+        .join('\n');
+
+      if (!fullText.trim()) throw new Error('No content returned. Check your API key in Netlify environment variables.');
+
+      stopLoadingMessages();
+      document.getElementById('reportBody').innerHTML = markdownToHtml(fullText);
+      document.getElementById('reportTimestamp').textContent =
+        'GENERATED ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) + ' · ' + today.toUpperCase();
+      document.getElementById('printBtn').className = 'btn-print active';
+      setState('report');
+
+    } catch (err) {
+      stopLoadingMessages();
+      document.getElementById('errorMsg').textContent = '⚠ ERROR: ' + err.message;
+      setState('error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '⬡ REGENERATE';
+    }
+  }
+</script>
+</body>
+</html>
